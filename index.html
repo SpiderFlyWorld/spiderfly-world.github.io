@@ -9,16 +9,17 @@
 
 body{
 font-family:Arial;
-background:#0a0f1f;
+background:#08122c;
 color:white;
 text-align:center;
 margin:0;
 }
 
 header{
-background:#121a44;
+background:#162055;
 padding:25px;
-font-size:32px;
+font-size:30px;
+font-weight:bold;
 }
 
 .container{
@@ -42,11 +43,11 @@ font-size:16px;
 
 .flightBox{
 margin-top:25px;
-background:#1b234f;
+background:#1c2557;
 padding:25px;
 border-radius:10px;
 display:inline-block;
-min-width:320px;
+min-width:360px;
 }
 
 </style>
@@ -72,6 +73,7 @@ SpiderFly Dispatch Center
 <option>B787</option>
 <option>B777</option>
 <option>A350</option>
+<option>A380</option>
 
 </select>
 
@@ -91,13 +93,85 @@ Click Generate Flight
 
 const flights = [
 
-{airline:"KLM", aircraft:"B787", route:"EHAM → KJFK"},
-{airline:"Qatar Airways", aircraft:"B777", route:"OTHH → EGLL"},
-{airline:"Emirates", aircraft:"A380", route:"OMDB → KLAX"},
-{airline:"IndiGo", aircraft:"A320", route:"VIDP → VABB"},
-{airline:"Lufthansa", aircraft:"B747", route:"EDDF → KJFK"},
-{airline:"United", aircraft:"B787", route:"KSFO → WSSS"},
-{airline:"Delta", aircraft:"A350", route:"KATL → EGLL"}
+{
+airline:"KLM",
+aircraft:"B787-9",
+flight:"KL641",
+tail:"PH-BHA",
+depICAO:"EHAM",
+depAirport:"Schiphol Airport",
+depCity:"Amsterdam",
+depCountry:"Netherlands",
+arrICAO:"KJFK",
+arrAirport:"John F Kennedy Intl",
+arrCity:"New York",
+arrCountry:"USA",
+distance:"3159 NM"
+},
+
+{
+airline:"Qatar Airways",
+aircraft:"B777-300ER",
+flight:"QR7",
+tail:"A7-BAC",
+depICAO:"OTHH",
+depAirport:"Hamad Intl",
+depCity:"Doha",
+depCountry:"Qatar",
+arrICAO:"EGLL",
+arrAirport:"Heathrow",
+arrCity:"London",
+arrCountry:"United Kingdom",
+distance:"2825 NM"
+},
+
+{
+airline:"Emirates",
+aircraft:"A380",
+flight:"EK201",
+tail:"A6-EVA",
+depICAO:"OMDB",
+depAirport:"Dubai Intl",
+depCity:"Dubai",
+depCountry:"UAE",
+arrICAO:"KLAX",
+arrAirport:"Los Angeles Intl",
+arrCity:"Los Angeles",
+arrCountry:"USA",
+distance:"7234 NM"
+},
+
+{
+airline:"Delta Air Lines",
+aircraft:"A350-900",
+flight:"DL1",
+tail:"N501DN",
+depICAO:"KATL",
+depAirport:"Hartsfield Jackson Intl",
+depCity:"Atlanta",
+depCountry:"USA",
+arrICAO:"EGLL",
+arrAirport:"Heathrow",
+arrCity:"London",
+arrCountry:"United Kingdom",
+distance:"3660 NM"
+},
+
+{
+airline:"IndiGo",
+aircraft:"A320neo",
+flight:"6E203",
+tail:"VT-IZK",
+depICAO:"VIDP",
+depAirport:"Indira Gandhi Intl",
+depCity:"Delhi",
+depCountry:"India",
+arrICAO:"VABB",
+arrAirport:"Chhatrapati Shivaji Intl",
+arrCity:"Mumbai",
+arrCountry:"India",
+distance:"619 NM"
+}
 
 ]
 
@@ -108,7 +182,7 @@ let selected=document.getElementById("aircraft").value
 let possible=flights
 
 if(selected!="ANY"){
-possible=flights.filter(f=>f.aircraft==selected)
+possible=flights.filter(f=>f.aircraft.includes(selected))
 }
 
 let f=possible[Math.floor(Math.random()*possible.length)]
@@ -116,8 +190,32 @@ let f=possible[Math.floor(Math.random()*possible.length)]
 document.getElementById("flight").innerHTML=
 
 "<h3>"+f.airline+"</h3>"+
-"<p>"+f.aircraft+"</p>"+
-"<p>"+f.route+"</p>"
+
+"<p><b>Aircraft:</b> "+f.aircraft+"</p>"+
+
+"<p><b>Flight:</b> "+f.flight+"</p>"+
+
+"<p><b>Tail Number:</b> "+f.tail+"</p>"+
+
+"<hr>"+
+
+"<p><b>Departure</b></p>"+
+
+"<p>"+f.depICAO+" — "+f.depAirport+"</p>"+
+
+"<p>"+f.depCity+", "+f.depCountry+"</p>"+
+
+"<br>"+
+
+"<p><b>Arrival</b></p>"+
+
+"<p>"+f.arrICAO+" — "+f.arrAirport+"</p>"+
+
+"<p>"+f.arrCity+", "+f.arrCountry+"</p>"+
+
+"<br>"+
+
+"<p><b>Distance:</b> "+f.distance+"</p>"
 
 }
 
