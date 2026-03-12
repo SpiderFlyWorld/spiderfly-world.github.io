@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>SpiderFly Dispatch Center</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#0a0f1f;
+color:white;
+text-align:center;
+margin:0;
+}
+
+header{
+background:#121a44;
+padding:25px;
+font-size:32px;
+}
+
+.container{
+padding:40px;
+}
+
+button{
+padding:12px 18px;
+font-size:16px;
+border:none;
+background:#ff3b3b;
+color:white;
+cursor:pointer;
+border-radius:6px;
+}
+
+select{
+padding:10px;
+font-size:16px;
+}
+
+.flightBox{
+margin-top:25px;
+background:#1b234f;
+padding:25px;
+border-radius:10px;
+display:inline-block;
+min-width:320px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+SpiderFly Dispatch Center
+</header>
+
+<div class="container">
+
+<h2>Generate Flight</h2>
+
+<select id="aircraft">
+
+<option value="ANY">Any Aircraft</option>
+<option>A320</option>
+<option>A321</option>
+<option>B737</option>
+<option>B787</option>
+<option>B777</option>
+<option>A350</option>
+
+</select>
+
+<br><br>
+
+<button onclick="generateFlight()">Generate Flight</button>
+
+<div class="flightBox" id="flight">
+
+Click Generate Flight
+
+</div>
+
+</div>
+
+<script>
+
+const flights = [
+
+{airline:"KLM", aircraft:"B787", route:"EHAM → KJFK"},
+{airline:"Qatar Airways", aircraft:"B777", route:"OTHH → EGLL"},
+{airline:"Emirates", aircraft:"A380", route:"OMDB → KLAX"},
+{airline:"IndiGo", aircraft:"A320", route:"VIDP → VABB"},
+{airline:"Lufthansa", aircraft:"B747", route:"EDDF → KJFK"},
+{airline:"United", aircraft:"B787", route:"KSFO → WSSS"},
+{airline:"Delta", aircraft:"A350", route:"KATL → EGLL"}
+
+]
+
+function generateFlight(){
+
+let selected=document.getElementById("aircraft").value
+
+let possible=flights
+
+if(selected!="ANY"){
+possible=flights.filter(f=>f.aircraft==selected)
+}
+
+let f=possible[Math.floor(Math.random()*possible.length)]
+
+document.getElementById("flight").innerHTML=
+
+"<h3>"+f.airline+"</h3>"+
+"<p>"+f.aircraft+"</p>"+
+"<p>"+f.route+"</p>"
+
+}
+
+</script>
+
+</body>
+</html>
