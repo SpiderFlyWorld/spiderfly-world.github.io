@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <title>SpiderFly Dispatch Center</title>
-  
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
 
 body{
 font-family:Arial;
-background:#08122c;
-color:white;
-text-align:center;
 margin:0;
+color:white;
+background:
+linear-gradient(rgba(0,0,40,0.85),rgba(0,0,40,0.85)),
+url("https://images.unsplash.com/photo-1504198266285-1659872e6590");
+background-size:cover;
+background-attachment:fixed;
+text-align:center;
 }
 
 header{
 background:#162055;
 padding:25px;
-font-size:30px;
+font-size:32px;
 font-weight:bold;
 }
 
@@ -28,28 +32,59 @@ font-weight:bold;
 padding:40px;
 }
 
-button{
-padding:12px 18px;
-font-size:16px;
-border:none;
-background:#ff3b3b;
-color:white;
-cursor:pointer;
-border-radius:6px;
-}
-
-select{
+select,button{
 padding:10px;
 font-size:16px;
+margin:5px;
+}
+
+button{
+background:#ff3b3b;
+border:none;
+color:white;
+border-radius:5px;
+cursor:pointer;
 }
 
 .flightBox{
-margin-top:25px;
 background:#1c2557;
 padding:25px;
 border-radius:10px;
 display:inline-block;
 min-width:360px;
+margin-top:20px;
+}
+
+#map{
+height:450px;
+width:85%;
+margin:auto;
+margin-top:30px;
+border-radius:10px;
+}
+
+.logo{
+height:60px;
+margin-bottom:10px;
+}
+
+.dashboard{
+width:85%;
+margin:auto;
+margin-top:30px;
+background:#1c2557;
+padding:15px;
+border-radius:10px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+td,th{
+padding:6px;
+border-bottom:1px solid #444;
 }
 
 </style>
@@ -58,16 +93,13 @@ min-width:360px;
 
 <body>
 
-<header>
-SpiderFly Dispatch Center
-</header>
+<header>SpiderFly Dispatch Center</header>
 
 <div class="container">
 
 <h2>Generate Flight</h2>
 
 <select id="aircraft">
-
 <option value="ANY">Any Aircraft</option>
 <option>A320</option>
 <option>A321</option>
@@ -76,246 +108,217 @@ SpiderFly Dispatch Center
 <option>B777</option>
 <option>A350</option>
 <option>A380</option>
-
 </select>
 
-<br><br>
+<br>
 
 <button onclick="generateFlight()">Generate Flight</button>
+<button onclick="logFlight()">Mark Completed</button>
 
 <div class="flightBox" id="flight">
-
 Click Generate Flight
+</div>
+
+<div id="map"></div>
+
+<div class="dashboard">
+
+<h3>Pilot Logbook</h3>
+
+<table id="logTable">
+<tr>
+<th>Flight</th>
+<th>Route</th>
+<th>Aircraft</th>
+<th>Distance</th>
+</tr>
+</table>
 
 </div>
 
-<div id="map" style="height:450px;width:80%;margin:auto;margin-top:40px;border-radius:10px;"></div>
+<div class="dashboard">
+
+<h3>Flight Statistics</h3>
+
+<p id="stats"></p>
+
+</div>
 
 </div>
 
 <script>
 
-<script>
+/* AIRPORT DATABASE */
 
-const airports = {
+const airports={
 
-KATL:[33.6407,-84.4277],
-EGLL:[51.4700,-0.4543],
-EHAM:[52.3105,4.7683],
-KJFK:[40.6413,-73.7781],
-OTHH:[25.2731,51.6081],
-OMDB:[25.2532,55.3657],
-KLAX:[33.9416,-118.4085],
-VIDP:[28.5562,77.1000],
-VABB:[19.0896,72.8656]
+KATL:{name:"Atlanta",country:"USA",lat:33.64,lon:-84.42},
+KJFK:{name:"New York",country:"USA",lat:40.64,lon:-73.77},
+KLAX:{name:"Los Angeles",country:"USA",lat:33.94,lon:-118.40},
+EHAM:{name:"Amsterdam",country:"Netherlands",lat:52.31,lon:4.76},
+EGLL:{name:"London",country:"UK",lat:51.47,lon:-0.45},
+EDDF:{name:"Frankfurt",country:"Germany",lat:50.03,lon:8.56},
+OTHH:{name:"Doha",country:"Qatar",lat:25.27,lon:51.60},
+OMDB:{name:"Dubai",country:"UAE",lat:25.25,lon:55.36},
+VIDP:{name:"Delhi",country:"India",lat:28.55,lon:77.10},
+VABB:{name:"Mumbai",country:"India",lat:19.08,lon:72.86}
 
 }
 
-const flights = [
+/* AIRLINE DATA */
 
-{
-airline:"KLM",
-aircraft:"B787-9",
-flight:"KL641",
-tail:"PH-BHA",
-depICAO:"EHAM",
-depAirport:"Schiphol Airport",
-depCity:"Amsterdam",
-depCountry:"Netherlands",
-arrICAO:"KJFK",
-arrAirport:"John F Kennedy Intl",
-arrCity:"New York",
-arrCountry:"USA",
-distance:"3159 NM"
-},
+const airlines=[
 
-{
-airline:"Qatar Airways",
-aircraft:"B777-300ER",
-flight:"QR7",
-tail:"A7-BAC",
-depICAO:"OTHH",
-depAirport:"Hamad Intl",
-depCity:"Doha",
-depCountry:"Qatar",
-arrICAO:"EGLL",
-arrAirport:"Heathrow",
-arrCity:"London",
-arrCountry:"United Kingdom",
-distance:"2825 NM"
-},
-
-{
-airline:"Emirates",
-aircraft:"A380",
-flight:"EK201",
-tail:"A6-EVA",
-depICAO:"OMDB",
-depAirport:"Dubai Intl",
-depCity:"Dubai",
-depCountry:"UAE",
-arrICAO:"KLAX",
-arrAirport:"Los Angeles Intl",
-arrCity:"Los Angeles",
-arrCountry:"USA",
-distance:"7234 NM"
-},
-
-{
-airline:"Delta Air Lines",
-aircraft:"A350-900",
-flight:"DL1",
-tail:"N501DN",
-depICAO:"KATL",
-depAirport:"Hartsfield Jackson Intl",
-depCity:"Atlanta",
-depCountry:"USA",
-arrICAO:"EGLL",
-arrAirport:"Heathrow",
-arrCity:"London",
-arrCountry:"United Kingdom",
-distance:"3660 NM"
-},
-
-{
-airline:"IndiGo",
-aircraft:"A320neo",
-flight:"6E203",
-tail:"VT-IZK",
-depICAO:"VIDP",
-depAirport:"Indira Gandhi Intl",
-depCity:"Delhi",
-depCountry:"India",
-arrICAO:"VABB",
-arrAirport:"Chhatrapati Shivaji Intl",
-arrCity:"Mumbai",
-arrCountry:"India",
-distance:"619 NM"
-}
+{name:"KLM",logo:"https://upload.wikimedia.org/wikipedia/commons/4/4c/KLM_logo.svg"},
+{name:"Emirates",logo:"https://upload.wikimedia.org/wikipedia/commons/d/d0/Emirates_logo.svg"},
+{name:"Qatar Airways",logo:"https://upload.wikimedia.org/wikipedia/commons/5/5c/Qatar_Airways_Logo.svg"},
+{name:"Delta",logo:"https://upload.wikimedia.org/wikipedia/commons/d/d1/Delta_logo.svg"},
+{name:"IndiGo",logo:"https://upload.wikimedia.org/wikipedia/commons/0/0f/IndiGo_Logo.svg"},
+{name:"Lufthansa",logo:"https://upload.wikimedia.org/wikipedia/commons/d/d8/Lufthansa_Logo.svg"}
 
 ]
 
-let map = L.map('map').setView([20,0],2)
+/* AIRCRAFT */
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-maxZoom:18
-}).addTo(map)
+const aircraftTypes=["A320","A321","B737","B787","B777","A350","A380"]
+
+/* MAP */
+
+let map=L.map('map').setView([20,0],2)
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
 let routeLayer
+
+/* STATS */
+
+let totalFlights=0
+let routeStats={}
+let aircraftStats={}
+
+let lastFlight=null
+
+function rand(list){
+return list[Math.floor(Math.random()*list.length)]
+}
+
+/* GENERATOR */
 
 function generateFlight(){
 
 let selected=document.getElementById("aircraft").value
 
-let possible=flights
+let aircraft=selected=="ANY"?rand(aircraftTypes):selected
 
-if(selected!="ANY"){
-possible=flights.filter(f=>f.aircraft.includes(selected))
+let airline=rand(airlines)
+
+let dep=rand(Object.keys(airports))
+let arr=rand(Object.keys(airports))
+
+while(arr==dep){
+arr=rand(Object.keys(airports))
 }
 
-let f=possible[Math.floor(Math.random()*possible.length)]
+let flight=airline.name.substring(0,2).toUpperCase()+Math.floor(100+Math.random()*900)
+
+let distance=Math.floor(Math.random()*6000+300)+" NM"
+
+lastFlight={
+flight:flight,
+route:dep+"-"+arr,
+aircraft:aircraft,
+distance:distance
+}
+
+let depData=airports[dep]
+let arrData=airports[arr]
 
 document.getElementById("flight").innerHTML=
 
-"<h3>"+f.airline+"</h3>"+
+"<img class='logo' src='"+airline.logo+"'>"+
 
-"<p><b>Aircraft:</b> "+f.aircraft+"</p>"+
+"<h3>"+airline.name+"</h3>"+
 
-"<p><b>Flight:</b> "+f.flight+"</p>"+
+"<p><b>Aircraft:</b> "+aircraft+"</p>"+
 
-"<p><b>Tail Number:</b> "+f.tail+"</p>"+
+"<p><b>Flight:</b> "+flight+"</p>"+
 
 "<hr>"+
 
 "<p><b>Departure</b></p>"+
 
-"<p>"+f.depICAO+" — "+f.depAirport+"</p>"+
+dep+" — "+depData.name+"<br>"+
 
-"<p>"+f.depCity+", "+f.depCountry+"</p>"+
+depData.country+
 
-"<br>"+
+"<br><br>"+
 
 "<p><b>Arrival</b></p>"+
 
-"<p>"+f.arrICAO+" — "+f.arrAirport+"</p>"+
+arr+" — "+arrData.name+"<br>"+
 
-"<p>"+f.arrCity+", "+f.arrCountry+"</p>"+
+arrData.country+
 
-"<br>"+
+"<br><br>"+
 
-"<p><b>Distance:</b> "+f.distance+"</p>"
+"<b>Distance:</b> "+distance
 
-let dep = airports[f.depICAO]
-let arr = airports[f.arrICAO]
+/* MAP */
+
+let depCoord=[depData.lat,depData.lon]
+let arrCoord=[arrData.lat,arrData.lon]
 
 if(routeLayer){
 map.removeLayer(routeLayer)
 }
 
-routeLayer = L.polyline([dep,arr],{color:'red',weight:3}).addTo(map)
+routeLayer=L.polyline([depCoord,arrCoord],{color:'red'}).addTo(map)
 
-map.setView(dep,4)
+map.setView(depCoord,3)
 
-L.marker(dep).addTo(map).bindPopup("Departure: "+f.depICAO)
-L.marker(arr).addTo(map).bindPopup("Arrival: "+f.arrICAO)
+L.marker(depCoord).addTo(map)
+L.marker(arrCoord).addTo(map)
 
 }
 
-</script>
+/* LOGBOOK */
 
-]
+function logFlight(){
 
-function generateFlight(){
+if(!lastFlight) return
 
-let dep = airports[f.depICAO]
-let arr = airports[f.arrICAO]
+totalFlights++
 
-map.setView(dep,4)
+routeStats[lastFlight.route]=(routeStats[lastFlight.route]||0)+1
+aircraftStats[lastFlight.aircraft]=(aircraftStats[lastFlight.aircraft]||0)+1
 
-L.marker(dep).addTo(map).bindPopup("Departure: "+f.depICAO)
-L.marker(arr).addTo(map).bindPopup("Arrival: "+f.arrICAO)
+let table=document.getElementById("logTable")
 
-L.polyline([dep,arr],{color:'red',weight:3}).addTo(map)
+let row=table.insertRow()
 
-let selected=document.getElementById("aircraft").value
+row.insertCell(0).innerText=lastFlight.flight
+row.insertCell(1).innerText=lastFlight.route
+row.insertCell(2).innerText=lastFlight.aircraft
+row.insertCell(3).innerText=lastFlight.distance
 
-let possible=flights
+updateStats()
 
-if(selected!="ANY"){
-possible=flights.filter(f=>f.aircraft.includes(selected))
 }
 
-let f=possible[Math.floor(Math.random()*possible.length)]
+/* DASHBOARD */
 
-document.getElementById("flight").innerHTML=
+function updateStats(){
 
-"<h3>"+f.airline+"</h3>"+
+let topRoute=Object.entries(routeStats).sort((a,b)=>b[1]-a[1])[0]
+let topAircraft=Object.entries(aircraftStats).sort((a,b)=>b[1]-a[1])[0]
 
-"<p><b>Aircraft:</b> "+f.aircraft+"</p>"+
+document.getElementById("stats").innerHTML=
 
-"<p><b>Flight:</b> "+f.flight+"</p>"+
+"Total Flights: "+totalFlights+"<br>"+
 
-"<p><b>Tail Number:</b> "+f.tail+"</p>"+
+"Most Flown Route: "+(topRoute?topRoute[0]+" ("+topRoute[1]+")":"-")+"<br>"+
 
-"<hr>"+
-
-"<p><b>Departure</b></p>"+
-
-"<p>"+f.depICAO+" — "+f.depAirport+"</p>"+
-
-"<p>"+f.depCity+", "+f.depCountry+"</p>"+
-
-"<br>"+
-
-"<p><b>Arrival</b></p>"+
-
-"<p>"+f.arrICAO+" — "+f.arrAirport+"</p>"+
-
-"<p>"+f.arrCity+", "+f.arrCountry+"</p>"+
-
-"<br>"+
-
-"<p><b>Distance:</b> "+f.distance+"</p>"
+"Most Used Aircraft: "+(topAircraft?topAircraft[0]+" ("+topAircraft[1]+")":"-")
 
 }
 
