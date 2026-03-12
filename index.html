@@ -4,7 +4,9 @@
 <head>
 
 <title>SpiderFly Dispatch Center</title>
-
+  
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 
 body{
@@ -87,9 +89,27 @@ Click Generate Flight
 
 </div>
 
+<div id="map" style="height:450px;width:80%;margin:auto;margin-top:40px;border-radius:10px;"></div>
+
 </div>
 
 <script>
+
+<script>
+
+const airports = {
+
+KATL:[33.6407,-84.4277],
+EGLL:[51.4700,-0.4543],
+EHAM:[52.3105,4.7683],
+KJFK:[40.6413,-73.7781],
+OTHH:[25.2731,51.6081],
+OMDB:[25.2532,55.3657],
+KLAX:[33.9416,-118.4085],
+VIDP:[28.5562,77.1000],
+VABB:[19.0896,72.8656]
+
+}
 
 const flights = [
 
@@ -175,7 +195,87 @@ distance:"619 NM"
 
 ]
 
+let map = L.map('map').setView([20,0],2)
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:18
+}).addTo(map)
+
+let routeLayer
+
 function generateFlight(){
+
+let selected=document.getElementById("aircraft").value
+
+let possible=flights
+
+if(selected!="ANY"){
+possible=flights.filter(f=>f.aircraft.includes(selected))
+}
+
+let f=possible[Math.floor(Math.random()*possible.length)]
+
+document.getElementById("flight").innerHTML=
+
+"<h3>"+f.airline+"</h3>"+
+
+"<p><b>Aircraft:</b> "+f.aircraft+"</p>"+
+
+"<p><b>Flight:</b> "+f.flight+"</p>"+
+
+"<p><b>Tail Number:</b> "+f.tail+"</p>"+
+
+"<hr>"+
+
+"<p><b>Departure</b></p>"+
+
+"<p>"+f.depICAO+" — "+f.depAirport+"</p>"+
+
+"<p>"+f.depCity+", "+f.depCountry+"</p>"+
+
+"<br>"+
+
+"<p><b>Arrival</b></p>"+
+
+"<p>"+f.arrICAO+" — "+f.arrAirport+"</p>"+
+
+"<p>"+f.arrCity+", "+f.arrCountry+"</p>"+
+
+"<br>"+
+
+"<p><b>Distance:</b> "+f.distance+"</p>"
+
+let dep = airports[f.depICAO]
+let arr = airports[f.arrICAO]
+
+if(routeLayer){
+map.removeLayer(routeLayer)
+}
+
+routeLayer = L.polyline([dep,arr],{color:'red',weight:3}).addTo(map)
+
+map.setView(dep,4)
+
+L.marker(dep).addTo(map).bindPopup("Departure: "+f.depICAO)
+L.marker(arr).addTo(map).bindPopup("Arrival: "+f.arrICAO)
+
+}
+
+</script>
+
+]
+
+function generateFlight(){
+
+let dep = airports[f.depICAO]
+let arr = airports[f.arrICAO]
+
+map.setView(dep,4)
+
+L.marker(dep).addTo(map).bindPopup("Departure: "+f.depICAO)
+L.marker(arr).addTo(map).bindPopup("Arrival: "+f.arrICAO)
+
+L.polyline([dep,arr],{color:'red',weight:3}).addTo(map)
 
 let selected=document.getElementById("aircraft").value
 
