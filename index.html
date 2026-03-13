@@ -2,7 +2,7 @@
 <html>
 <head>
 
-<title>SpiderFly Dispatch Center</title>
+<title>SpiderFly Dispatch</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -27,12 +27,8 @@ text-align:center;
 padding:30px;
 }
 
-select,button{
-padding:10px;
-margin:5px;
-}
-
 button{
+padding:10px 15px;
 background:#ff3b3b;
 border:none;
 color:white;
@@ -43,8 +39,8 @@ cursor:pointer;
 background:#1c2557;
 padding:20px;
 border-radius:10px;
-width:420px;
 margin-top:20px;
+width:420px;
 }
 
 table{
@@ -56,16 +52,15 @@ border-collapse:collapse;
 th,td{
 padding:8px;
 border-bottom:1px solid #333;
-text-align:left;
 }
 
 #map{
 height:450px;
 margin-top:30px;
-border-radius:10px;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -74,29 +69,27 @@ border-radius:10px;
 
 <div class="container">
 
-<select id="airlineFilter"></select>
-<select id="aircraftFilter"></select>
-
-<button onclick="generateFlight()">Generate Flight</button>
+<button onclick="loadFlights()">Load Real Flights</button>
 
 <div class="flightCard" id="flightCard">
-Click Generate Flight
+Click Load Flights
 </div>
 
 <table>
+
 <thead>
 <tr>
 <th>Airline</th>
-<th>Aircraft</th>
+<th>Flight</th>
 <th>Route</th>
-<th>Distance</th>
-<th>Duration</th>
+<th>Aircraft</th>
 <th>SimBrief</th>
 <th>Status</th>
 </tr>
 </thead>
 
-<tbody id="routeTable"></tbody>
+<tbody id="flightTable"></tbody>
+
 </table>
 
 <div id="map"></div>
@@ -105,147 +98,100 @@ Click Generate Flight
 
 <script>
 
-const airports = {
+const API_KEY = "7c02aa24906f1b41432d40fa3f936e70"
 
-EHAM:{name:"Amsterdam Schiphol",city:"Amsterdam",country:"Netherlands",lat:52.3105,lon:4.7683},
-EGLL:{name:"London Heathrow",city:"London",country:"UK",lat:51.4700,lon:-0.4543},
-KJFK:{name:"John F Kennedy Intl",city:"New York",country:"USA",lat:40.6413,lon:-73.7781},
-KLAX:{name:"Los Angeles Intl",city:"Los Angeles",country:"USA",lat:33.9416,lon:-118.4085},
-EDDF:{name:"Frankfurt Airport",city:"Frankfurt",country:"Germany",lat:50.0379,lon:8.5622},
-OMDB:{name:"Dubai Intl",city:"Dubai",country:"UAE",lat:25.2532,lon:55.3657},
-OTHH:{name:"Hamad Intl",city:"Doha",country:"Qatar",lat:25.2731,lon:51.6081},
-VIDP:{name:"Indira Gandhi Intl",city:"Delhi",country:"India",lat:28.5562,lon:77.1000},
-VABB:{name:"Mumbai Intl",city:"Mumbai",country:"India",lat:19.0896,lon:72.8656},
-RKSI:{name:"Incheon Intl",city:"Seoul",country:"South Korea",lat:37.4602,lon:126.4407}
+let map = L.map('map').setView([20,0],2)
 
-}
-
-const routes=[
-
-{airline:"KLM",aircraft:"B787-9",tail:"PH-BHA",from:"EHAM",to:"KJFK",distance:5856},
-{airline:"KLM",aircraft:"A320",tail:"PH-AOA",from:"EHAM",to:"EGLL",distance:371},
-{airline:"Lufthansa",aircraft:"A350",tail:"D-AIXA",from:"EDDF",to:"KLAX",distance:9300},
-{airline:"Emirates",aircraft:"A380",tail:"A6-EVA",from:"OMDB",to:"KLAX",distance:13400},
-{airline:"Qatar Airways",aircraft:"B777",tail:"A7-BAA",from:"OTHH",to:"EGLL",distance:5240},
-{airline:"IndiGo",aircraft:"A320neo",tail:"VT-IZK",from:"VIDP",to:"VABB",distance:1148},
-{airline:"Korean Air",aircraft:"B787",tail:"HL8392",from:"RKSI",to:"KJFK",distance:11000}
-
-]
-
-let map=L.map("map").setView([20,0],2)
-
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18}).addTo(map)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:18
+}).addTo(map)
 
 let markers=[]
 let routeLine=null
 
-function loadFilters(){
+async function loadFlights(){
 
-let airlines=[...new Set(routes.map(r=>r.airline))]
-let aircraft=[...new Set(routes.map(r=>r.aircraft))]
+let url=`https://api.aviationstack.com/v1/flights?access_key=${API_KEY}&limit=50`
 
-let a=document.getElementById("airlineFilter")
-let ac=document.getElementById("aircraftFilter")
+let response = await fetch(url)
 
-a.innerHTML='<option value="ALL">All Airlines</option>'
-ac.innerHTML='<option value="ALL">All Aircraft</option>'
+let data = await response.json()
 
-airlines.forEach(x=>a.innerHTML+=`<option>${x}</option>`)
-aircraft.forEach(x=>ac.innerHTML+=`<option>${x}</option>`)
+displayFlights(data.data)
 
 }
 
-function loadTable(){
+function displayFlights(flights){
 
-let airline=document.getElementById("airlineFilter").value
-let aircraft=document.getElementById("aircraftFilter").value
+let table=document.getElementById("flightTable")
 
-let filtered=routes.filter(r=>
-(airline==="ALL"||r.airline===airline) &&
-(aircraft==="ALL"||r.aircraft===aircraft)
-)
+table.innerHTML=""
 
-let tbody=document.getElementById("routeTable")
-tbody.innerHTML=""
+flights.forEach((f,i)=>{
 
-filtered.forEach((r,i)=>{
+let airline=f.airline?.name || "Unknown"
 
-let duration=(r.distance/800).toFixed(1)
+let flight=f.flight?.iata || "N/A"
+
+let dep=f.departure?.iata || "?"
+
+let arr=f.arrival?.iata || "?"
+
+let aircraft=f.aircraft?.registration || "Unknown"
 
 let tr=document.createElement("tr")
 
 tr.innerHTML=`
 
-<td>${r.airline}</td>
-<td>${r.aircraft}</td>
-<td>${r.from} → ${r.to}<br>${airports[r.from].city} → ${airports[r.to].city}</td>
-<td>${r.distance} km</td>
-<td>${duration} hr</td>
-<td><a target="_blank" href="https://dispatch.simbrief.com/options/custom?orig=${r.from}&dest=${r.to}">SimBrief</a></td>
-<td><button onclick="completeFlight(${i})">Completed</button></td>
+<td>${airline}</td>
+
+<td>${flight}</td>
+
+<td>${dep} → ${arr}</td>
+
+<td>${aircraft}</td>
+
+<td>
+
+<a target="_blank"
+
+href="https://dispatch.simbrief.com/options/custom?orig=${dep}&dest=${arr}">
+
+SimBrief
+
+</a>
+
+</td>
+
+<td>
+
+<button onclick="completeFlight('${flight}')">
+
+Completed
+
+</button>
+
+</td>
 
 `
 
-tbody.appendChild(tr)
+table.appendChild(tr)
 
 })
 
 }
 
-function generateFlight(){
-
-let r=routes[Math.floor(Math.random()*routes.length)]
-
-document.getElementById("flightCard").innerHTML=
-
-`<h3>${r.airline}</h3>
-<p><b>Aircraft:</b> ${r.aircraft}</p>
-<p><b>Tail:</b> ${r.tail}</p>
-<hr>
-<p><b>Departure</b><br>${airports[r.from].name}<br>${airports[r.from].city}, ${airports[r.from].country}</p>
-<p><b>Arrival</b><br>${airports[r.to].name}<br>${airports[r.to].city}, ${airports[r.to].country}</p>
-<p><b>Distance:</b> ${r.distance} km</p>`
-
-drawMap(r)
-
-}
-
-function drawMap(r){
-
-markers.forEach(m=>map.removeLayer(m))
-markers=[]
-
-if(routeLine) map.removeLayer(routeLine)
-
-let dep=[airports[r.from].lat,airports[r.from].lon]
-let arr=[airports[r.to].lat,airports[r.to].lon]
-
-let m1=L.marker(dep).addTo(map).bindPopup(airports[r.from].name)
-let m2=L.marker(arr).addTo(map).bindPopup(airports[r.to].name)
-
-markers.push(m1,m2)
-
-routeLine=L.polyline([dep,arr],{color:"red"}).addTo(map)
-
-map.fitBounds(routeLine.getBounds())
-
-}
-
-function completeFlight(i){
+function completeFlight(flight){
 
 let log=JSON.parse(localStorage.getItem("spiderfly_log")||"[]")
-log.push(routes[i])
+
+log.push(flight)
+
 localStorage.setItem("spiderfly_log",JSON.stringify(log))
 
 alert("Flight saved to logbook")
 
 }
-
-document.getElementById("airlineFilter").onchange=loadTable
-document.getElementById("aircraftFilter").onchange=loadTable
-
-loadFilters()
-loadTable()
 
 </script>
 
