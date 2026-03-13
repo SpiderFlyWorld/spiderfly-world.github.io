@@ -29,7 +29,7 @@ padding:20px;
 text-align:center;
 }
 
-select,button{
+select,input,button{
 padding:10px;
 margin:6px;
 border-radius:5px;
@@ -60,9 +60,10 @@ margin:30px;
 border-radius:10px;
 }
 
-.stats{
-text-align:center;
-padding:20px;
+.admin{
+background:#111b4a;
+padding:15px;
+margin:20px;
 }
 
 </style>
@@ -113,7 +114,32 @@ padding:20px;
 
 </table>
 
-<div class="stats" id="stats"></div>
+<div id="stats"></div>
+
+<!-- ADMIN PANEL -->
+
+<div class="admin">
+
+<h3>Add Airline</h3>
+
+<input id="newAirline" placeholder="Airline Name">
+<button onclick="addAirline()">Add Airline</button>
+
+<h3>Add Aircraft Variant</h3>
+
+<input id="variantAirline" placeholder="Airline Name">
+<input id="variantName" placeholder="Aircraft Variant">
+<button onclick="addVariant()">Add Variant</button>
+
+<h3>Add Route</h3>
+
+<input id="routeAirline" placeholder="Airline">
+<input id="routeFrom" placeholder="FROM ICAO">
+<input id="routeTo" placeholder="TO ICAO">
+
+<button onclick="addRoute()">Add Route</button>
+
+</div>
 
 <script>
 
@@ -124,33 +150,30 @@ EGLL:{name:"Heathrow",city:"London",country:"UK",lat:51.47,lon:-0.45},
 EHAM:{name:"Schiphol",city:"Amsterdam",country:"Netherlands",lat:52.31,lon:4.76},
 EDDF:{name:"Frankfurt",city:"Frankfurt",country:"Germany",lat:50.03,lon:8.56},
 LFPG:{name:"Charles De Gaulle",city:"Paris",country:"France",lat:49.00,lon:2.55},
-LEMD:{name:"Madrid",city:"Madrid",country:"Spain",lat:40.47,lon:-3.56},
 OMDB:{name:"Dubai",city:"Dubai",country:"UAE",lat:25.25,lon:55.36},
 KJFK:{name:"JFK",city:"New York",country:"USA",lat:40.64,lon:-73.77},
 KLAX:{name:"Los Angeles",city:"Los Angeles",country:"USA",lat:33.94,lon:-118.40},
-VIDP:{name:"Delhi",city:"Delhi",country:"India",lat:28.55,lon:77.10},
-VABB:{name:"Mumbai",city:"Mumbai",country:"India",lat:19.08,lon:72.86}
+RKSI:{name:"Incheon",city:"Seoul",country:"Korea",lat:37.46,lon:126.44},
+RJTT:{name:"Tokyo Haneda",city:"Tokyo",country:"Japan",lat:35.55,lon:139.78}
 }
 
-/* AIRLINES + FLEETS */
+/* LOAD DATABASE */
 
-const airlines={
+let airlines=JSON.parse(localStorage.getItem("airlines"))||{
 
-"IndiGo":["A320neo","A321neo","A321XLR","A350-900"],
-"Air India":["A320neo","A321neo","B777-300ER","B787-8","B787-9","A350-900","A350-1000"],
-"Emirates":["B777-300ER","B777-9","A350-900","A380"],
-"Qatar Airways":["B737 MAX 8","A330-300","A350-900","A350-1000","B777X","B787"],
-"Singapore Airlines":["B737 MAX 8","A350-900","B777-300ER","B787-10"],
-"Lufthansa":["A320neo","A321neo","A340-600","A350-900","B747-8","B787-9"],
-"Air France":["A220-300","A320neo","A330-200","A350-900","B777","B787"],
-"British Airways":["A320neo","A321neo","A350-1000","A380","B777","B787"],
-"EasyJet":["A319","A320neo","A321neo"],
-"Ryanair":["B737-800","B737 MAX 8"],
-"United":["B737 MAX 8","B737 MAX 9","A321neo","B767","B777","B787"],
-"Delta":["A220","A321neo","A330","A350"],
-"American":["A321XLR","B737 MAX 8","B777","B787"]
+"KLM":["A320","B737","B787"],
+"Wizz Air":["A320neo","A321neo"],
+"Spirit":["A320","A321"],
+"Korean Air":["A330","B777","B787"],
+"Emirates":["A380","B777"],
+"Qatar Airways":["A350","B777","B787"],
+"IndiGo":["A320neo","A321neo"],
+"Lufthansa":["A320","A321","A350"],
+"EasyJet":["A320","A321"]
 
 }
+
+let routes=JSON.parse(localStorage.getItem("routes"))||[]
 
 /* MAP */
 
@@ -167,6 +190,8 @@ let routeLayer
 function init(){
 
 let airlineSelect=document.getElementById("airline")
+
+airlineSelect.innerHTML=""
 
 Object.keys(airlines).forEach(a=>{
 
@@ -201,6 +226,49 @@ opt.text=a
 aircraftSelect.add(opt)
 
 })
+
+}
+
+/* ADD AIRLINE */
+
+function addAirline(){
+
+let name=document.getElementById("newAirline").value
+
+airlines[name]=[]
+
+localStorage.setItem("airlines",JSON.stringify(airlines))
+
+init()
+
+}
+
+/* ADD VARIANT */
+
+function addVariant(){
+
+let airline=document.getElementById("variantAirline").value
+let variant=document.getElementById("variantName").value
+
+airlines[airline].push(variant)
+
+localStorage.setItem("airlines",JSON.stringify(airlines))
+
+init()
+
+}
+
+/* ADD ROUTE */
+
+function addRoute(){
+
+let airline=document.getElementById("routeAirline").value
+let from=document.getElementById("routeFrom").value
+let to=document.getElementById("routeTo").value
+
+routes.push({airline,from,to})
+
+localStorage.setItem("routes",JSON.stringify(routes))
 
 }
 
@@ -245,21 +313,16 @@ table.innerHTML=`
 </tr>
 `
 
-let keys=Object.keys(airports)
+routes
+.filter(r=>r.airline===airline)
+.forEach(r=>{
 
-for(let i=0;i<8;i++){
+let dep=airports[r.from]
+let arr=airports[r.to]
 
-let dep=keys[Math.floor(Math.random()*keys.length)]
-let arr=keys[Math.floor(Math.random()*keys.length)]
+if(!dep||!arr) return
 
-if(dep==arr) continue
-
-let d=distance(
-airports[dep].lat,
-airports[dep].lon,
-airports[arr].lat,
-airports[arr].lon
-)
+let d=distance(dep.lat,dep.lon,arr.lat,arr.lon)
 
 let duration=Math.round(d/450*60)
 
@@ -273,27 +336,25 @@ let row=table.insertRow()
 row.insertCell(0).innerText=flight
 
 row.insertCell(1).innerText=
-dep+" — "+airports[dep].name+" ("+
-airports[dep].city+", "+airports[dep].country+")"
+r.from+" "+dep.name+" ("+dep.city+", "+dep.country+")"
 
 row.insertCell(2).innerText=
-arr+" — "+airports[arr].name+" ("+
-airports[arr].city+", "+airports[arr].country+")"
+r.to+" "+arr.name+" ("+arr.city+", "+arr.country+")"
 
 row.insertCell(3).innerText=d+" NM"
 
 row.insertCell(4).innerText=hrs+"h "+mins+"m"
 
 row.insertCell(5).innerHTML=
-"<a target='_blank' href='https://dispatch.simbrief.com/options/custom?orig="+dep+"&dest="+arr+"'>SimBrief</a>"
+"<a target='_blank' href='https://dispatch.simbrief.com/options/custom?orig="+r.from+"&dest="+r.to+"'>SimBrief</a>"
 
 row.insertCell(6).innerHTML=
-"<button onclick='showRoute(\""+dep+"\",\""+arr+"\")'>Map</button>"
+"<button onclick='showRoute(\""+r.from+"\",\""+r.to+"\")'>Map</button>"
 
 row.insertCell(7).innerHTML=
-"<button onclick='completeFlight(\""+flight+"\",\""+dep+"-"+arr+"\",\""+aircraft+"\",\""+d+"\")'>Done</button>"
+"<button onclick='completeFlight(\""+flight+"\",\""+r.from+"-"+r.to+"\",\""+aircraft+"\",\""+d+"\")'>Done</button>"
 
-}
+})
 
 }
 
@@ -333,28 +394,17 @@ function renderLog(){
 
 let table=document.getElementById("logTable")
 
-table.innerHTML=`
-<tr>
-<th>Flight</th>
-<th>Route</th>
-<th>Aircraft</th>
-<th>Distance</th>
-</tr>
-`
+table.innerHTML="<tr><th>Flight</th><th>Route</th><th>Aircraft</th><th>Distance</th></tr>"
 
 let total=0
 
 log.forEach(f=>{
-
 let row=table.insertRow()
-
 row.insertCell(0).innerText=f.flight
 row.insertCell(1).innerText=f.route
 row.insertCell(2).innerText=f.aircraft
 row.insertCell(3).innerText=f.distance+" NM"
-
 total+=parseInt(f.distance)
-
 })
 
 document.getElementById("stats").innerHTML=
