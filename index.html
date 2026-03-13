@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <title>SpiderFly Dispatch Center</title>
@@ -12,363 +11,241 @@
 
 body{
 font-family:Arial;
-margin:0;
-background:#0c1438;
+background:#08122c;
 color:white;
+margin:0;
 }
 
 header{
-background:#09194c;
+background:#162055;
 padding:20px;
-font-size:26px;
+font-size:28px;
 text-align:center;
 }
 
-.controls{
-padding:20px;
-text-align:center;
+.container{
+padding:30px;
 }
 
 select,button{
 padding:10px;
-margin:6px;
-border-radius:5px;
-border:none;
+margin:5px;
 }
 
 button{
 background:#ff3b3b;
+border:none;
 color:white;
 cursor:pointer;
 }
 
-table{
-width:92%;
-margin:auto;
-border-collapse:collapse;
+.flightCard{
+background:#1c2557;
+padding:20px;
+border-radius:10px;
+width:420px;
 margin-top:20px;
 }
 
+table{
+width:100%;
+margin-top:30px;
+border-collapse:collapse;
+}
+
 th,td{
-padding:10px;
+padding:8px;
 border-bottom:1px solid #333;
+text-align:left;
 }
 
 #map{
-height:420px;
-margin:30px;
+height:450px;
+margin-top:30px;
 border-radius:10px;
 }
 
 </style>
-
 </head>
 
 <body>
 
 <header>SpiderFly Dispatch Center</header>
 
-<div class="controls">
+<div class="container">
 
-<select id="airline"></select>
-<select id="aircraft"></select>
+<select id="airlineFilter"></select>
+<select id="aircraftFilter"></select>
 
-<button onclick="generateRoutes()">Generate Flight</button>
+<button onclick="generateFlight()">Generate Flight</button>
 
+<div class="flightCard" id="flightCard">
+Click Generate Flight
 </div>
 
-<table id="routesTable">
-
+<table>
+<thead>
 <tr>
-<th>Flight</th>
-<th>From</th>
-<th>To</th>
+<th>Airline</th>
+<th>Aircraft</th>
+<th>Route</th>
 <th>Distance</th>
 <th>Duration</th>
 <th>SimBrief</th>
-<th>Map</th>
-<th>Complete</th>
+<th>Status</th>
 </tr>
+</thead>
 
+<tbody id="routeTable"></tbody>
 </table>
 
 <div id="map"></div>
 
-<h3 style="text-align:center">Pilot Logbook</h3>
-
-<table id="logTable">
-<tr>
-<th>Flight</th>
-<th>Route</th>
-<th>Aircraft</th>
-<th>Distance</th>
-</tr>
-</table>
-
-<div id="stats"></div>
+</div>
 
 <script>
 
-/* AIRPORT DATABASE */
+const airports = {
 
-const airports={
-
-EHAM:{name:"Amsterdam Schiphol",city:"Amsterdam",country:"Netherlands",lat:52.31,lon:4.76},
-EGLL:{name:"London Heathrow",city:"London",country:"UK",lat:51.47,lon:-0.45},
-EDDF:{name:"Frankfurt",city:"Frankfurt",country:"Germany",lat:50.03,lon:8.56},
-LFPG:{name:"Paris CDG",city:"Paris",country:"France",lat:49.00,lon:2.55},
-OMDB:{name:"Dubai Intl",city:"Dubai",country:"UAE",lat:25.25,lon:55.36},
-OTHH:{name:"Hamad Intl",city:"Doha",country:"Qatar",lat:25.27,lon:51.60},
-RKSI:{name:"Incheon Intl",city:"Seoul",country:"South Korea",lat:37.46,lon:126.44},
-RJTT:{name:"Tokyo Haneda",city:"Tokyo",country:"Japan",lat:35.55,lon:139.78},
-WSSS:{name:"Singapore Changi",city:"Singapore",country:"Singapore",lat:1.35,lon:103.99},
-VIDP:{name:"Delhi",city:"Delhi",country:"India",lat:28.55,lon:77.10},
-VABB:{name:"Mumbai",city:"Mumbai",country:"India",lat:19.08,lon:72.86},
-KJFK:{name:"New York JFK",city:"New York",country:"USA",lat:40.64,lon:-73.77},
-KLAX:{name:"Los Angeles",city:"Los Angeles",country:"USA",lat:33.94,lon:-118.40}
+EHAM:{name:"Amsterdam Schiphol",city:"Amsterdam",country:"Netherlands",lat:52.3105,lon:4.7683},
+EGLL:{name:"London Heathrow",city:"London",country:"UK",lat:51.4700,lon:-0.4543},
+KJFK:{name:"John F Kennedy Intl",city:"New York",country:"USA",lat:40.6413,lon:-73.7781},
+KLAX:{name:"Los Angeles Intl",city:"Los Angeles",country:"USA",lat:33.9416,lon:-118.4085},
+EDDF:{name:"Frankfurt Airport",city:"Frankfurt",country:"Germany",lat:50.0379,lon:8.5622},
+OMDB:{name:"Dubai Intl",city:"Dubai",country:"UAE",lat:25.2532,lon:55.3657},
+OTHH:{name:"Hamad Intl",city:"Doha",country:"Qatar",lat:25.2731,lon:51.6081},
+VIDP:{name:"Indira Gandhi Intl",city:"Delhi",country:"India",lat:28.5562,lon:77.1000},
+VABB:{name:"Mumbai Intl",city:"Mumbai",country:"India",lat:19.0896,lon:72.8656},
+RKSI:{name:"Incheon Intl",city:"Seoul",country:"South Korea",lat:37.4602,lon:126.4407}
 
 }
 
-/* AIRLINES + REAL FLEETS */
+const routes=[
 
-const airlines={
+{airline:"KLM",aircraft:"B787-9",tail:"PH-BHA",from:"EHAM",to:"KJFK",distance:5856},
+{airline:"KLM",aircraft:"A320",tail:"PH-AOA",from:"EHAM",to:"EGLL",distance:371},
+{airline:"Lufthansa",aircraft:"A350",tail:"D-AIXA",from:"EDDF",to:"KLAX",distance:9300},
+{airline:"Emirates",aircraft:"A380",tail:"A6-EVA",from:"OMDB",to:"KLAX",distance:13400},
+{airline:"Qatar Airways",aircraft:"B777",tail:"A7-BAA",from:"OTHH",to:"EGLL",distance:5240},
+{airline:"IndiGo",aircraft:"A320neo",tail:"VT-IZK",from:"VIDP",to:"VABB",distance:1148},
+{airline:"Korean Air",aircraft:"B787",tail:"HL8392",from:"RKSI",to:"KJFK",distance:11000}
 
-"Air India":["A319","A320","A320neo","A321","A321neo","A350-900","B777-200LR","B777-300ER","B787-8","B787-9"],
+]
 
-"Malaysia Airlines":["B737-800","B737 MAX 8","A330-200","A330-300","A330-900","A350-900"],
+let map=L.map("map").setView([20,0],2)
 
-"KLM":["A320","A321","B737-700","B737-800","B737-900","B787-9","B787-10"],
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18}).addTo(map)
 
-"Emirates":["A380","B777-300ER"],
+let markers=[]
+let routeLine=null
 
-"Qatar Airways":["A320","A321","A330-300","A350-900","A350-1000","B777-300ER","B787-8","B787-9"],
+function loadFilters(){
 
-"Lufthansa":["A319","A320","A321","A321neo","A340-600","A350-900","B747-8","B787-9"],
+let airlines=[...new Set(routes.map(r=>r.airline))]
+let aircraft=[...new Set(routes.map(r=>r.aircraft))]
 
-"Air France":["A220-300","A320","A321","A330-200","A350-900","B777","B787"],
+let a=document.getElementById("airlineFilter")
+let ac=document.getElementById("aircraftFilter")
 
-"British Airways":["A319","A320","A321","A350-1000","A380","B777","B787"],
+a.innerHTML='<option value="ALL">All Airlines</option>'
+ac.innerHTML='<option value="ALL">All Aircraft</option>'
 
-"Singapore Airlines":["B737 MAX 8","A350-900","A380","B777-300ER","B787-10"],
-
-"Korean Air":["A220","A321neo","A330","A350","B737","B777","B787"],
-
-"IndiGo":["A320","A320neo","A321neo"],
-
-"United":["B737","A320","A321neo","B777","B787"],
-
-"Delta":["A220","A320","A321","A350","A330"],
-
-"American":["A319","A320","A321","B737","B777","B787"]
-
-}
-
-/* AIRLINE HUBS */
-
-const airlineHubs={
-
-"KLM":["EHAM"],
-"Emirates":["OMDB"],
-"Qatar Airways":["OTHH"],
-"Lufthansa":["EDDF"],
-"Air France":["LFPG"],
-"British Airways":["EGLL"],
-"Singapore Airlines":["WSSS"],
-"Korean Air":["RKSI"],
-"IndiGo":["VIDP","VABB"],
-"Air India":["VIDP"],
-"Malaysia Airlines":["WMKK"],
-"United":["KORD"],
-"Delta":["KATL"],
-"American":["KDFW"]
+airlines.forEach(x=>a.innerHTML+=`<option>${x}</option>`)
+aircraft.forEach(x=>ac.innerHTML+=`<option>${x}</option>`)
 
 }
 
-/* MAP */
+function loadTable(){
 
-let map=L.map('map').setView([30,10],3)
+let airline=document.getElementById("airlineFilter").value
+let aircraft=document.getElementById("aircraftFilter").value
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map)
+let filtered=routes.filter(r=>
+(airline==="ALL"||r.airline===airline) &&
+(aircraft==="ALL"||r.aircraft===aircraft)
+)
 
-let routeLayer
+let tbody=document.getElementById("routeTable")
+tbody.innerHTML=""
 
-/* LOAD AIRLINES */
+filtered.forEach((r,i)=>{
 
-function init(){
+let duration=(r.distance/800).toFixed(1)
 
-let airlineSelect=document.getElementById("airline")
+let tr=document.createElement("tr")
 
-Object.keys(airlines).forEach(a=>{
-let opt=document.createElement("option")
-opt.value=a
-opt.text=a
-airlineSelect.add(opt)
-})
+tr.innerHTML=`
 
-updateAircraft()
+<td>${r.airline}</td>
+<td>${r.aircraft}</td>
+<td>${r.from} → ${r.to}<br>${airports[r.from].city} → ${airports[r.to].city}</td>
+<td>${r.distance} km</td>
+<td>${duration} hr</td>
+<td><a target="_blank" href="https://dispatch.simbrief.com/options/custom?orig=${r.from}&dest=${r.to}">SimBrief</a></td>
+<td><button onclick="completeFlight(${i})">Completed</button></td>
 
-}
+`
 
-document.getElementById("airline").onchange=updateAircraft
+tbody.appendChild(tr)
 
-function updateAircraft(){
-
-let airline=document.getElementById("airline").value
-let aircraftSelect=document.getElementById("aircraft")
-
-aircraftSelect.innerHTML=""
-
-airlines[airline].forEach(a=>{
-let opt=document.createElement("option")
-opt.value=a
-opt.text=a
-aircraftSelect.add(opt)
 })
 
 }
 
-/* DISTANCE */
+function generateFlight(){
 
-function distance(lat1,lon1,lat2,lon2){
+let r=routes[Math.floor(Math.random()*routes.length)]
 
-let R=6371
-let dLat=(lat2-lat1)*Math.PI/180
-let dLon=(lon2-lon1)*Math.PI/180
+document.getElementById("flightCard").innerHTML=
 
-let a=Math.sin(dLat/2)*Math.sin(dLat/2)+
-Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)*Math.sin(dLon/2)
+`<h3>${r.airline}</h3>
+<p><b>Aircraft:</b> ${r.aircraft}</p>
+<p><b>Tail:</b> ${r.tail}</p>
+<hr>
+<p><b>Departure</b><br>${airports[r.from].name}<br>${airports[r.from].city}, ${airports[r.from].country}</p>
+<p><b>Arrival</b><br>${airports[r.to].name}<br>${airports[r.to].city}, ${airports[r.to].country}</p>
+<p><b>Distance:</b> ${r.distance} km</p>`
 
-let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-
-return Math.round(R*c*0.539957)
-
-}
-
-/* GENERATE ROUTE */
-
-function generateRoutes(){
-
-let airline=document.getElementById("airline").value
-let aircraft=document.getElementById("aircraft").value
-let hubs=airlineHubs[airline]
-
-let table=document.getElementById("routesTable")
-
-table.innerHTML=`<tr>
-<th>Flight</th>
-<th>From</th>
-<th>To</th>
-<th>Distance</th>
-<th>Duration</th>
-<th>SimBrief</th>
-<th>Map</th>
-<th>Complete</th>
-</tr>`
-
-let airportKeys=Object.keys(airports)
-
-for(let i=0;i<6;i++){
-
-let hub=hubs[Math.floor(Math.random()*hubs.length)]
-let dest=airportKeys[Math.floor(Math.random()*airportKeys.length)]
-
-if(hub===dest) continue
-
-let dep=airports[hub]
-let arr=airports[dest]
-
-let d=distance(dep.lat,dep.lon,arr.lat,arr.lon)
-
-let duration=Math.round(d/450*60)
-let hrs=Math.floor(duration/60)
-let mins=duration%60
-
-let flight=airline.substring(0,2).toUpperCase()+Math.floor(Math.random()*900)
-
-let row=table.insertRow()
-
-row.insertCell(0).innerText=flight
-
-row.insertCell(1).innerText=
-hub+" "+dep.name+" ("+dep.city+", "+dep.country+")"
-
-row.insertCell(2).innerText=
-dest+" "+arr.name+" ("+arr.city+", "+arr.country+")"
-
-row.insertCell(3).innerText=d+" NM"
-
-row.insertCell(4).innerText=hrs+"h "+mins+"m"
-
-row.insertCell(5).innerHTML=
-"<a target='_blank' href='https://dispatch.simbrief.com/options/custom?orig="+hub+"&dest="+dest+"'>SimBrief</a>"
-
-row.insertCell(6).innerHTML=
-"<button onclick='showRoute(\""+hub+"\",\""+dest+"\")'>Map</button>"
-
-row.insertCell(7).innerHTML=
-"<button onclick='completeFlight(\""+flight+"\",\""+hub+"-"+dest+"\",\""+aircraft+"\",\""+d+"\")'>Done</button>"
+drawMap(r)
 
 }
 
-}
+function drawMap(r){
 
-/* MAP */
+markers.forEach(m=>map.removeLayer(m))
+markers=[]
 
-function showRoute(dep,arr){
+if(routeLine) map.removeLayer(routeLine)
 
-let depData=airports[dep]
-let arrData=airports[arr]
+let dep=[airports[r.from].lat,airports[r.from].lon]
+let arr=[airports[r.to].lat,airports[r.to].lon]
 
-let depCoord=[depData.lat,depData.lon]
-let arrCoord=[arrData.lat,arrData.lon]
+let m1=L.marker(dep).addTo(map).bindPopup(airports[r.from].name)
+let m2=L.marker(arr).addTo(map).bindPopup(airports[r.to].name)
 
-if(routeLayer) map.removeLayer(routeLayer)
+markers.push(m1,m2)
 
-routeLayer=L.polyline([depCoord,arrCoord],{color:"red"}).addTo(map)
+routeLine=L.polyline([dep,arr],{color:"red"}).addTo(map)
 
-map.setView(depCoord,4)
-
-}
-
-/* LOGBOOK */
-
-let log=JSON.parse(localStorage.getItem("spiderflylog"))||[]
-
-function completeFlight(flight,route,aircraft,distance){
-
-log.push({flight,route,aircraft,distance})
-
-localStorage.setItem("spiderflylog",JSON.stringify(log))
-
-renderLog()
+map.fitBounds(routeLine.getBounds())
 
 }
 
-function renderLog(){
+function completeFlight(i){
 
-let table=document.getElementById("logTable")
+let log=JSON.parse(localStorage.getItem("spiderfly_log")||"[]")
+log.push(routes[i])
+localStorage.setItem("spiderfly_log",JSON.stringify(log))
 
-table.innerHTML="<tr><th>Flight</th><th>Route</th><th>Aircraft</th><th>Distance</th></tr>"
-
-let total=0
-
-log.forEach(f=>{
-let row=table.insertRow()
-row.insertCell(0).innerText=f.flight
-row.insertCell(1).innerText=f.route
-row.insertCell(2).innerText=f.aircraft
-row.insertCell(3).innerText=f.distance+" NM"
-total+=parseInt(f.distance)
-})
-
-document.getElementById("stats").innerHTML=
-"Flights Completed: "+log.length+" | Total Distance: "+total+" NM"
+alert("Flight saved to logbook")
 
 }
 
-init()
-renderLog()
+document.getElementById("airlineFilter").onchange=loadTable
+document.getElementById("aircraftFilter").onchange=loadTable
+
+loadFilters()
+loadTable()
 
 </script>
 
