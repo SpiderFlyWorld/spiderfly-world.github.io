@@ -3,11 +3,10 @@
 
 <head>
 
-<title>SpiderFly Dispatch System</title>
+<title>SpiderFly Dispatch Center</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 
@@ -16,16 +15,16 @@ font-family:Arial;
 margin:0;
 color:white;
 background:
-linear-gradient(rgba(0,0,25,0.9),rgba(0,0,25,0.9)),
-url("https://images.unsplash.com/photo-1529070538774-1843cb3265df");
+linear-gradient(rgba(0,0,30,.85),rgba(0,0,30,.85)),
+url("https://images.unsplash.com/photo-1504196606672-aef5c9cefc92");
 background-size:cover;
 background-attachment:fixed;
 }
 
 header{
-background:#0b1638;
+background:#0c1a46;
 padding:20px;
-font-size:28px;
+font-size:26px;
 text-align:center;
 font-weight:bold;
 }
@@ -37,31 +36,27 @@ padding:20px;
 text-align:center;
 }
 
-button{
-padding:10px 15px;
+select,button{
+padding:10px;
 margin:6px;
+font-size:14px;
+border-radius:6px;
 border:none;
+}
+
+button{
 background:#ff3b3b;
 color:white;
-border-radius:6px;
 cursor:pointer;
 }
 
-select{
-padding:10px;
-}
-
 .flightBox{
-background:#121c44;
+background:#15205a;
 padding:25px;
 border-radius:10px;
-margin-top:20px;
 display:inline-block;
+margin-top:20px;
 min-width:350px;
-}
-
-.logo{
-height:60px;
 }
 
 .aircraftImg{
@@ -69,33 +64,21 @@ width:240px;
 }
 
 #map{
-height:450px;
+height:420px;
 margin-top:30px;
 border-radius:10px;
 }
 
-.dashboard{
-display:flex;
-gap:20px;
-flex-wrap:wrap;
-justify-content:center;
-margin-top:40px;
-}
-
-.card{
-background:#121c44;
-padding:20px;
-border-radius:10px;
-width:380px;
-}
-
 table{
-width:100%;
+margin:auto;
+margin-top:20px;
 border-collapse:collapse;
+width:70%;
+background:#111a40;
 }
 
 td,th{
-padding:6px;
+padding:8px;
 border-bottom:1px solid #444;
 }
 
@@ -105,62 +88,43 @@ border-bottom:1px solid #444;
 
 <body>
 
-<header>SpiderFly Dispatch System</header>
+<header>SpiderFly Dispatch Center</header>
 
 <div class="container">
 
-<h2>Generate Flight</h2>
+<h3>Flight Generator</h3>
 
-<select id="aircraft">
-<option value="ANY">Any Aircraft</option>
-<option>A320</option>
-<option>A321</option>
-<option>A330-300</option>
-<option>B737</option>
-<option>B787</option>
-<option>B777</option>
-<option>A350</option>
-<option>A380</option>
+<select id="airline"></select>
+
+<select id="aircraft"></select>
+
+<select id="routeSelect">
+<option value="random">Random Route</option>
 </select>
 
 <br>
 
 <button onclick="generateFlight()">Generate Flight</button>
-<button onclick="logFlight()">Mark Completed</button>
 
 <div class="flightBox" id="flight">
-Click Generate Flight
+Generate a flight
 </div>
 
 <div id="map"></div>
 
-<div class="dashboard">
-
-<div class="card">
-<h3>Aircraft Usage</h3>
-<canvas id="chart"></canvas>
-</div>
-
-<div class="card">
-<h3>Top Aircraft</h3>
-<div id="topAircraft"></div>
-</div>
-
-<div class="card">
-<h3>Flight Logbook</h3>
+<h3>Completed Flights</h3>
 
 <table id="logTable">
+
 <tr>
 <th>Flight</th>
 <th>Route</th>
 <th>Aircraft</th>
+<th>Duration</th>
 <th>Distance</th>
 </tr>
+
 </table>
-
-</div>
-
-</div>
 
 </div>
 
@@ -170,50 +134,69 @@ Click Generate Flight
 
 const airports={
 
-KATL:{name:"Hartsfield Jackson",city:"Atlanta",country:"USA",lat:33.64,lon:-84.42},
-KJFK:{name:"JFK Intl",city:"New York",country:"USA",lat:40.64,lon:-73.77},
-KLAX:{name:"Los Angeles Intl",city:"Los Angeles",country:"USA",lat:33.94,lon:-118.40},
 EGLL:{name:"Heathrow",city:"London",country:"UK",lat:51.47,lon:-0.45},
 EHAM:{name:"Schiphol",city:"Amsterdam",country:"Netherlands",lat:52.31,lon:4.76},
-EDDF:{name:"Frankfurt Intl",city:"Frankfurt",country:"Germany",lat:50.03,lon:8.56},
-OMDB:{name:"Dubai Intl",city:"Dubai",country:"UAE",lat:25.25,lon:55.36},
-OTHH:{name:"Hamad Intl",city:"Doha",country:"Qatar",lat:25.27,lon:51.60},
+EDDF:{name:"Frankfurt",city:"Frankfurt",country:"Germany",lat:50.03,lon:8.56},
+LEMD:{name:"Madrid Barajas",city:"Madrid",country:"Spain",lat:40.47,lon:-3.56},
+LFPG:{name:"Charles De Gaulle",city:"Paris",country:"France",lat:49.00,lon:2.55},
+LIMC:{name:"Milan Malpensa",city:"Milan",country:"Italy",lat:45.63,lon:8.72},
 VIDP:{name:"Indira Gandhi",city:"Delhi",country:"India",lat:28.55,lon:77.10},
-VABB:{name:"Mumbai Intl",city:"Mumbai",country:"India",lat:19.08,lon:72.86}
+VABB:{name:"Mumbai Intl",city:"Mumbai",country:"India",lat:19.08,lon:72.86},
+OMDB:{name:"Dubai Intl",city:"Dubai",country:"UAE",lat:25.25,lon:55.36},
+KJFK:{name:"JFK",city:"New York",country:"USA",lat:40.64,lon:-73.77}
+
+}
+
+/* AIRLINES */
+
+const airlines={
+
+EasyJet:{
+aircraft:["A320","A321"],
+tails:["G-EZUI","G-EZTB","G-EZAP"],
+routes:[
+["EGLL","EHAM"],
+["EGLL","LFPG"],
+["EGLL","LEMD"],
+["EHAM","LIMC"]
+]
+},
+
+Lufthansa:{
+aircraft:["A320","A321","A330-300"],
+tails:["D-AIQA","D-AIKO","D-AIKP"],
+routes:[
+["EDDF","EGLL"],
+["EDDF","EHAM"],
+["EDDF","LFPG"]
+]
+},
+
+Emirates:{
+aircraft:["A380","B777","A330-300"],
+tails:["A6-EOD","A6-EVB","A6-EGC"],
+routes:[
+["OMDB","EGLL"],
+["OMDB","KJFK"],
+["OMDB","VIDP"]
+]
+}
 
 }
 
 /* AIRCRAFT IMAGES */
 
 const aircraftImages={
-
 "A320":"https://upload.wikimedia.org/wikipedia/commons/3/3f/Airbus_A320-200.png",
 "A321":"https://upload.wikimedia.org/wikipedia/commons/0/0c/Airbus_A321.png",
 "A330-300":"https://upload.wikimedia.org/wikipedia/commons/4/4f/Airbus_A330-300.png",
-"B737":"https://upload.wikimedia.org/wikipedia/commons/7/7c/Boeing_737-800.png",
-"B787":"https://upload.wikimedia.org/wikipedia/commons/e/e4/Boeing_787_Dreamliner.png",
-"B777":"https://upload.wikimedia.org/wikipedia/commons/0/0f/Boeing_777-300ER.png",
-"A350":"https://upload.wikimedia.org/wikipedia/commons/4/4c/Airbus_A350.png",
-"A380":"https://upload.wikimedia.org/wikipedia/commons/9/9e/Airbus_A380_blue_sky.png"
-
+"A380":"https://upload.wikimedia.org/wikipedia/commons/9/9e/Airbus_A380_blue_sky.png",
+"B777":"https://upload.wikimedia.org/wikipedia/commons/0/0f/Boeing_777-300ER.png"
 }
-
-/* AIRLINES */
-
-const airlines=[
-{name:"Emirates",logo:"https://logo.clearbit.com/emirates.com"},
-{name:"Qatar Airways",logo:"https://logo.clearbit.com/qatarairways.com"},
-{name:"Delta",logo:"https://logo.clearbit.com/delta.com"},
-{name:"KLM",logo:"https://logo.clearbit.com/klm.com"},
-{name:"Lufthansa",logo:"https://logo.clearbit.com/lufthansa.com"},
-{name:"IndiGo",logo:"https://logo.clearbit.com/goindigo.in"}
-]
-
-const aircraftTypes=Object.keys(aircraftImages)
 
 /* MAP */
 
-let map=L.map('map').setView([20,0],2)
+let map=L.map('map').setView([30,10],3)
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 maxZoom:18
@@ -221,52 +204,119 @@ maxZoom:18
 
 let routeLayer
 
-/* STATS */
+/* INIT */
 
-let aircraftStats={}
-let lastFlight=null
+function init(){
 
-function rand(arr){
-return arr[Math.floor(Math.random()*arr.length)]
+let airlineSelect=document.getElementById("airline")
+
+Object.keys(airlines).forEach(a=>{
+let opt=document.createElement("option")
+opt.value=a
+opt.text=a
+airlineSelect.add(opt)
+})
+
+updateAircraft()
+
 }
 
-/* GENERATE FLIGHT */
+document.getElementById("airline").onchange=updateAircraft
+
+function updateAircraft(){
+
+let airline=document.getElementById("airline").value
+
+let aircraftSelect=document.getElementById("aircraft")
+
+aircraftSelect.innerHTML=""
+
+airlines[airline].aircraft.forEach(a=>{
+let opt=document.createElement("option")
+opt.value=a
+opt.text=a
+aircraftSelect.add(opt)
+})
+
+updateRoutes()
+
+}
+
+function updateRoutes(){
+
+let airline=document.getElementById("airline").value
+let routeSelect=document.getElementById("routeSelect")
+
+routeSelect.innerHTML='<option value="random">Random Route</option>'
+
+airlines[airline].routes.forEach(r=>{
+let opt=document.createElement("option")
+opt.value=r.join("-")
+opt.text=r[0]+" → "+r[1]
+routeSelect.add(opt)
+})
+
+}
+
+/* DISTANCE */
+
+function distance(lat1,lon1,lat2,lon2){
+
+let R=6371
+
+let dLat=(lat2-lat1)*Math.PI/180
+let dLon=(lon2-lon1)*Math.PI/180
+
+let a=Math.sin(dLat/2)*Math.sin(dLat/2)+
+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)*Math.sin(dLon/2)
+
+let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+
+return Math.round(R*c*0.539957)
+
+}
+
+/* GENERATE */
 
 function generateFlight(){
 
-let selected=document.getElementById("aircraft").value
+let airline=document.getElementById("airline").value
+let aircraft=document.getElementById("aircraft").value
+let routeChoice=document.getElementById("routeSelect").value
 
-let aircraft=selected=="ANY"?rand(aircraftTypes):selected
+let route
 
-let airline=rand(airlines)
+if(routeChoice=="random")
+route=airlines[airline].routes[Math.floor(Math.random()*airlines[airline].routes.length)]
+else
+route=routeChoice.split("-")
 
-let dep=rand(Object.keys(airports))
-let arr=rand(Object.keys(airports))
-
-while(arr===dep){
-arr=rand(Object.keys(airports))
-}
+let dep=route[0]
+let arr=route[1]
 
 let depData=airports[dep]
 let arrData=airports[arr]
 
-let flight=airline.name.substring(0,2).toUpperCase()+Math.floor(Math.random()*900+100)
+let dist=distance(depData.lat,depData.lon,arrData.lat,arrData.lon)
 
-let distance=Math.floor(Math.random()*5000+500)+" NM"
+let duration=Math.round(dist/450*60)
+let hrs=Math.floor(duration/60)
+let mins=duration%60
 
-lastFlight={flight,dep,arr,aircraft,distance}
+let tail=airlines[airline].tails[Math.floor(Math.random()*airlines[airline].tails.length)]
 
-/* DISPLAY */
+let flight=airline.substring(0,2).toUpperCase()+Math.floor(Math.random()*900+100)
 
 document.getElementById("flight").innerHTML=
 
-"<img class='logo' src='"+airline.logo+"'><br>"+
-
-"<h3>"+airline.name+"</h3>"+
-
 "<img class='aircraftImg' src='"+aircraftImages[aircraft]+"'><br>"+
 
+"<h3>"+airline+"</h3>"+
+
 "<b>Aircraft:</b> "+aircraft+"<br>"+
+
+"<b>Tail:</b> "+tail+"<br>"+
 
 "<b>Flight:</b> "+flight+
 
@@ -288,20 +338,22 @@ arrData.city+", "+arrData.country+
 
 "<br><br>"+
 
-"<b>Distance:</b> "+distance
+"<b>Distance:</b> "+dist+" NM<br>"+
 
-/* MAP */
+"<b>Duration:</b> "+hrs+"h "+mins+"m<br>"+
+
+"<br>"+
+
+"<a target='_blank' href='https://dispatch.simbrief.com/options/custom?orig="+dep+"&dest="+arr+"'>Generate in SimBrief</a>"
 
 let depCoord=[depData.lat,depData.lon]
 let arrCoord=[arrData.lat,arrData.lon]
 
-if(routeLayer){
-map.removeLayer(routeLayer)
-}
+if(routeLayer) map.removeLayer(routeLayer)
 
 routeLayer=L.polyline([depCoord,arrCoord],{color:"red"}).addTo(map)
 
-map.setView(depCoord,3)
+map.setView(depCoord,4)
 
 L.marker(depCoord).addTo(map)
 .bindPopup(depData.name+"<br>"+depData.city+", "+depData.country)
@@ -311,55 +363,7 @@ L.marker(arrCoord).addTo(map)
 
 }
 
-/* LOGBOOK */
-
-function logFlight(){
-
-if(!lastFlight) return
-
-let table=document.getElementById("logTable")
-
-let row=table.insertRow()
-
-row.insertCell(0).innerText=lastFlight.flight
-row.insertCell(1).innerText=lastFlight.dep+" → "+lastFlight.arr
-row.insertCell(2).innerText=lastFlight.aircraft
-row.insertCell(3).innerText=lastFlight.distance
-
-aircraftStats[lastFlight.aircraft]=(aircraftStats[lastFlight.aircraft]||0)+1
-
-updateStats()
-
-}
-
-/* CHART */
-
-let ctx=document.getElementById("chart").getContext("2d")
-
-let chart=new Chart(ctx,{
-type:"doughnut",
-data:{labels:[],datasets:[{data:[],backgroundColor:["#ff6384","#36a2eb","#ffce56","#4bc0c0","#9966ff","#ff9f40","#66ff99","#ff9966"]}]}
-})
-
-function updateStats(){
-
-chart.data.labels=Object.keys(aircraftStats)
-chart.data.datasets[0].data=Object.values(aircraftStats)
-chart.update()
-
-let sorted=Object.entries(aircraftStats)
-.sort((a,b)=>b[1]-a[1])
-.slice(0,3)
-
-let html=""
-
-sorted.forEach(x=>{
-html+="<p>"+x[0]+" — "+x[1]+" flights</p>"
-})
-
-document.getElementById("topAircraft").innerHTML=html
-
-}
+init()
 
 </script>
 
