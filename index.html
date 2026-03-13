@@ -18,11 +18,10 @@ color:white;
 }
 
 header{
-background:#0a1b5c;
+background:#09194c;
 padding:20px;
-text-align:center;
 font-size:26px;
-font-weight:bold;
+text-align:center;
 }
 
 .controls{
@@ -30,22 +29,21 @@ padding:20px;
 text-align:center;
 }
 
-select{
+select,button{
 padding:10px;
 margin:6px;
+border-radius:5px;
+border:none;
 }
 
 button{
-padding:10px 14px;
 background:#ff3b3b;
-border:none;
 color:white;
 cursor:pointer;
-border-radius:5px;
 }
 
 table{
-width:90%;
+width:92%;
 margin:auto;
 border-collapse:collapse;
 margin-top:20px;
@@ -54,13 +52,17 @@ margin-top:20px;
 th,td{
 padding:10px;
 border-bottom:1px solid #333;
-text-align:center;
 }
 
 #map{
 height:420px;
 margin:30px;
-border-radius:8px;
+border-radius:10px;
+}
+
+.stats{
+text-align:center;
+padding:20px;
 }
 
 </style>
@@ -69,7 +71,7 @@ border-radius:8px;
 
 <body>
 
-<header>SpiderFly Dispatch System</header>
+<header>SpiderFly Dispatch Center</header>
 
 <div class="controls">
 
@@ -91,18 +93,33 @@ border-radius:8px;
 <th>Duration</th>
 <th>SimBrief</th>
 <th>Map</th>
+<th>Complete</th>
 </tr>
 
 </table>
 
 <div id="map"></div>
 
+<h3 style="text-align:center">Pilot Logbook</h3>
+
+<table id="logTable">
+
+<tr>
+<th>Flight</th>
+<th>Route</th>
+<th>Aircraft</th>
+<th>Distance</th>
+</tr>
+
+</table>
+
+<div class="stats" id="stats"></div>
+
 <script>
 
 /* AIRPORT DATABASE */
 
 const airports={
-
 EGLL:{name:"Heathrow",city:"London",country:"UK",lat:51.47,lon:-0.45},
 EHAM:{name:"Schiphol",city:"Amsterdam",country:"Netherlands",lat:52.31,lon:4.76},
 EDDF:{name:"Frankfurt",city:"Frankfurt",country:"Germany",lat:50.03,lon:8.56},
@@ -113,30 +130,27 @@ KJFK:{name:"JFK",city:"New York",country:"USA",lat:40.64,lon:-73.77},
 KLAX:{name:"Los Angeles",city:"Los Angeles",country:"USA",lat:33.94,lon:-118.40},
 VIDP:{name:"Delhi",city:"Delhi",country:"India",lat:28.55,lon:77.10},
 VABB:{name:"Mumbai",city:"Mumbai",country:"India",lat:19.08,lon:72.86}
-
 }
 
-/* AIRLINES */
+/* AIRLINES + FLEETS */
 
 const airlines={
 
-Emirates:["A380","B777","A333"],
-Lufthansa:["A320","A321","A333"],
-AirFrance:["A320","A321","A359"],
-BritishAirways:["A320","A321","B788","A359"],
-Delta:["A320","A321","A333"],
-United:["B738","B739","B788"],
-IndiGo:["A320","A321"],
-EasyJet:["A320","A321"]
+"IndiGo":["A320neo","A321neo","A321XLR","A350-900"],
+"Air India":["A320neo","A321neo","B777-300ER","B787-8","B787-9","A350-900","A350-1000"],
+"Emirates":["B777-300ER","B777-9","A350-900","A380"],
+"Qatar Airways":["B737 MAX 8","A330-300","A350-900","A350-1000","B777X","B787"],
+"Singapore Airlines":["B737 MAX 8","A350-900","B777-300ER","B787-10"],
+"Lufthansa":["A320neo","A321neo","A340-600","A350-900","B747-8","B787-9"],
+"Air France":["A220-300","A320neo","A330-200","A350-900","B777","B787"],
+"British Airways":["A320neo","A321neo","A350-1000","A380","B777","B787"],
+"EasyJet":["A319","A320neo","A321neo"],
+"Ryanair":["B737-800","B737 MAX 8"],
+"United":["B737 MAX 8","B737 MAX 9","A321neo","B767","B777","B787"],
+"Delta":["A220","A321neo","A330","A350"],
+"American":["A321XLR","B737 MAX 8","B777","B787"]
 
 }
-
-/* AIRCRAFT */
-
-const aircraftTypes=[
-"A319","A320","A321","A333","A359","A388",
-"B737","B738","B739","B77W","B788","B789"
-]
 
 /* MAP */
 
@@ -148,7 +162,7 @@ maxZoom:18
 
 let routeLayer
 
-/* INIT */
+/* LOAD AIRLINES */
 
 function init(){
 
@@ -164,9 +178,21 @@ airlineSelect.add(opt)
 
 })
 
+updateAircraft()
+
+}
+
+document.getElementById("airline").onchange=updateAircraft
+
+function updateAircraft(){
+
+let airline=document.getElementById("airline").value
+
 let aircraftSelect=document.getElementById("aircraft")
 
-aircraftTypes.forEach(a=>{
+aircraftSelect.innerHTML=""
+
+airlines[airline].forEach(a=>{
 
 let opt=document.createElement("option")
 opt.value=a
@@ -177,8 +203,6 @@ aircraftSelect.add(opt)
 })
 
 }
-
-init()
 
 /* DISTANCE */
 
@@ -209,7 +233,6 @@ let aircraft=document.getElementById("aircraft").value
 let table=document.getElementById("routesTable")
 
 table.innerHTML=`
-
 <tr>
 <th>Flight</th>
 <th>From</th>
@@ -218,13 +241,13 @@ table.innerHTML=`
 <th>Duration</th>
 <th>SimBrief</th>
 <th>Map</th>
+<th>Complete</th>
 </tr>
-
 `
 
 let keys=Object.keys(airports)
 
-for(let i=0;i<6;i++){
+for(let i=0;i<8;i++){
 
 let dep=keys[Math.floor(Math.random()*keys.length)]
 let arr=keys[Math.floor(Math.random()*keys.length)]
@@ -249,10 +272,16 @@ let row=table.insertRow()
 
 row.insertCell(0).innerText=flight
 
-row.insertCell(1).innerText=dep
-row.insertCell(2).innerText=arr
+row.insertCell(1).innerText=
+dep+" — "+airports[dep].name+" ("+
+airports[dep].city+", "+airports[dep].country+")"
+
+row.insertCell(2).innerText=
+arr+" — "+airports[arr].name+" ("+
+airports[arr].city+", "+airports[arr].country+")"
 
 row.insertCell(3).innerText=d+" NM"
+
 row.insertCell(4).innerText=hrs+"h "+mins+"m"
 
 row.insertCell(5).innerHTML=
@@ -261,11 +290,14 @@ row.insertCell(5).innerHTML=
 row.insertCell(6).innerHTML=
 "<button onclick='showRoute(\""+dep+"\",\""+arr+"\")'>Map</button>"
 
-}
+row.insertCell(7).innerHTML=
+"<button onclick='completeFlight(\""+flight+"\",\""+dep+"-"+arr+"\",\""+aircraft+"\",\""+d+"\")'>Done</button>"
 
 }
 
-/* MAP ROUTE */
+}
+
+/* MAP */
 
 function showRoute(dep,arr){
 
@@ -281,13 +313,57 @@ routeLayer=L.polyline([depCoord,arrCoord],{color:"red"}).addTo(map)
 
 map.setView(depCoord,4)
 
-L.marker(depCoord).addTo(map)
-.bindPopup(depData.name+"<br>"+depData.city+", "+depData.country)
+}
 
-L.marker(arrCoord).addTo(map)
-.bindPopup(arrData.name+"<br>"+arrData.city+", "+arrData.country)
+/* LOGBOOK */
+
+let log=JSON.parse(localStorage.getItem("spiderflylog"))||[]
+
+function completeFlight(flight,route,aircraft,distance){
+
+log.push({flight,route,aircraft,distance})
+
+localStorage.setItem("spiderflylog",JSON.stringify(log))
+
+renderLog()
 
 }
+
+function renderLog(){
+
+let table=document.getElementById("logTable")
+
+table.innerHTML=`
+<tr>
+<th>Flight</th>
+<th>Route</th>
+<th>Aircraft</th>
+<th>Distance</th>
+</tr>
+`
+
+let total=0
+
+log.forEach(f=>{
+
+let row=table.insertRow()
+
+row.insertCell(0).innerText=f.flight
+row.insertCell(1).innerText=f.route
+row.insertCell(2).innerText=f.aircraft
+row.insertCell(3).innerText=f.distance+" NM"
+
+total+=parseInt(f.distance)
+
+})
+
+document.getElementById("stats").innerHTML=
+"Flights Completed: "+log.length+" | Total Distance: "+total+" NM"
+
+}
+
+init()
+renderLog()
 
 </script>
 
